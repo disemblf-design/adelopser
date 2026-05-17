@@ -1,6 +1,6 @@
 # Apple Music Downloader — Docker 镜像
 
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 WORKDIR /app
 
@@ -8,8 +8,14 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gpac \
     ffmpeg \
-    bento4 \
-    && rm -rf /var/lib/apt/lists/*
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -L -o /tmp/bento4.zip https://github.com/nicedayzhu/bento4/releases/download/v1.6.0-641-2-universal/Bento4-SDK-1-6-0-641.2-x86_64-unknown-linux.zip \
+    && apt-get purge -y curl && apt-get autoremove -y \
+    && cd /tmp && python -m zipfile -e bento4.zip bento4 \
+    && cp /tmp/bento4/*/bin/mp4decrypt /usr/local/bin/ \
+    && chmod +x /usr/local/bin/mp4decrypt \
+    && rm -rf /tmp/bento4 /tmp/bento4.zip
 
 # 安装 Python 依赖
 COPY pyproject.toml .
