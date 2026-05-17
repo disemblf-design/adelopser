@@ -92,6 +92,7 @@ config: ConfigSet = ConfigSet()
 counter = Counter()
 ok_dict: dict[str, list[int]] = {}
 added_tracks: list[AddedTrack] = []
+error_list: list[str] = []  # ← ДОБАВЛЕНО: список ошибок
 _forbidden_re = re.compile(r'[/\\<>:"|?*]')
 
 # CLI 运行时标志（由 main() 函数设置）
@@ -192,7 +193,7 @@ def write_cover(save_dir: str, name: str, cover_url: str) -> Optional[str]:
 
 def rip_track(track: Track, client: AppleMusicClient) -> None:
     """下载单个音轨（核心逻辑）"""
-    global counter, ok_dict, added_tracks
+    global counter, ok_dict, added_tracks, error_list
 
     counter.total += 1
     console.print(f"Track {track.task_num} of {track.task_total}: {track.type}")
@@ -211,6 +212,8 @@ def rip_track(track: Track, client: AppleMusicClient) -> None:
             download_mv(track.id, track.save_dir, client, track.storefront, config.media_user_token, track, config)
             counter.success += 1
         except Exception as e:
+            error_msg = f"MV {track.id}: {str(e)}"
+            error_list.append(error_msg)
             console.print(f"[red]Failed to download MV: {e}[/red]")
             counter.error += 1
         return
@@ -323,6 +326,8 @@ def rip_track(track: Track, client: AppleMusicClient) -> None:
             track_m3u8_url, _ = _extract_media_from_m3u8(track.m3u8, False)
             m3u8_run(track.id, track_m3u8_url, track_path, config)
     except Exception as e:
+        error_msg = f"{track.resp.attributes.name if track.resp else track.name}: {str(e)}"
+        error_list.append(error_msg)
         console.print(f"[red]Download failed: {e}[/red]")
         counter.error += 1
         return
@@ -495,29 +500,35 @@ def rip_playlist(playlist_id: str, client: AppleMusicClient, storefront: str) ->
 
 def rip_station(station_id: str, client: AppleMusicClient, storefront: str) -> None:
     """下载电台"""
-    global config, counter, ok_dict
+    global config, counter, ok_dict, error_list
 
     from am_downloader.api.station import get_station_assets_url_and_server_url
 
-    assets_url, server_url = get_station_assets_url_and_server_url(client, station_id, config.media_user_token)
-    if not assets_url:
-        raise RuntimeError("Failed to get station assets")
+    try:
+        assets_url, server_url = get_station_assets_url_and_server_url(client, station_id, config.media_user_token)
+        if not assets_url:
+            raise RuntimeError("Failed to get station assets")
 
-    track_m3u8 = assets_url.replace("index.m3u8", "256/prog_index.m3u8")
-    hex_key, enc_path = download_radio_stream(
-        station_id, track_m3u8, client.token, config.media_user_token, server_url
-    )
+        track_m3u8 = assets_url.replace("index.m3u8", "256/prog_index.m3u8")
+        hex_key, enc_path = download_radio_stream(
+            station_id, track_m3u8, client.token, config.media_user_token, server_url
+        )
 
-    singer_folder = _build_singer_folder("Apple Music Station", "", "AAC")
-    station_folder_name = limit_string("Radio Station", config.limit_max)
-    station_folder = os.path.join(singer_folder, _sanitize_filename_aggressive(station_folder_name))
-    os.makedirs(station_folder, exist_ok=True)
+        singer_folder = _build_singer_folder("Apple Music Station", "", "AAC")
+        station_folder_name = limit_string("Radio Station", config.limit_max)
+        station_folder = os.path.join(singer_folder, _sanitize_filename_aggressive(station_folder_name))
+        os.makedirs(station_folder, exist_ok=True)
 
-    out_path = os.path.join(station_folder, f"{station_id}.m4a")
-    ext_mv_data(hex_key, enc_path, out_path)
+        out_path = os.path.join(station_folder, f"{station_id}.m4a")
+        ext_mv_data(hex_key, enc_path, out_path)
 
-    counter.success += 1
-    ok_dict.setdefault(station_id, []).append(1)
+        counter.success += 1
+        ok_dict.setdefault(station_id, []).append(1)
+    except Exception as e:
+        error_msg = f"Station {station_id}: {str(e)}"
+        error_list.append(error_msg)
+        console.print(f"[red]Station download failed: {e}[/red]")
+        counter.error += 1
 
 
 # ─── 路径构建辅助 ─────────────────────────────────────────────
@@ -659,7 +670,7 @@ def main(
     urls: tuple[str, ...],
 ):
     """Apple Music ALAC / Dolby Atmos / AAC Downloader"""
-    global config, counter, ok_dict, added_tracks
+    global config, counter, ok_dict, added_tracks, error_list
 
     # 设置运行时标志
     _set_flags(
@@ -768,6 +779,8 @@ def main(
                     download_mv(mv_id, config.mv_save_folder, client, storefront, config.media_user_token, config=config)
                     counter.success += 1
                 except Exception as e:
+                    error_msg = f"MV {url}: {str(e)}"
+                    error_list.append(error_msg)
                     console.print(f"[red]MV download failed: {e}[/red]")
                     counter.error += 1
                 continue
@@ -778,6 +791,8 @@ def main(
                 try:
                     _rip_single_song(song_id, client, storefront)
                 except Exception as e:
+                    error_msg = f"Song {song_id}: {str(e)}"
+                    error_list.append(error_msg)
                     console.print(f"[red]Song download failed: {e}[/red]")
                 continue
 
@@ -788,6 +803,8 @@ def main(
                     try:
                         rip_album(album_id, client, storefront)
                     except Exception as e:
+                        error_msg = f"Album {album_id}: {str(e)}"
+                        error_list.append(error_msg)
                         console.print(f"[red]Album download failed: {e}[/red]")
 
             elif parsed.url_type == "playlist":
@@ -797,6 +814,8 @@ def main(
                     try:
                         rip_playlist(playlist_id, client, storefront)
                     except Exception as e:
+                        error_msg = f"Playlist {playlist_id}: {str(e)}"
+                        error_list.append(error_msg)
                         console.print(f"[red]Playlist download failed: {e}[/red]")
 
             elif parsed.url_type == "station":
@@ -809,6 +828,8 @@ def main(
                     try:
                         rip_station(station_id, client, storefront)
                     except Exception as e:
+                        error_msg = f"Station {station_id}: {str(e)}"
+                        error_list.append(error_msg)
                         console.print(f"[red]Station download failed: {e}[/red]")
 
         # 统计
@@ -818,12 +839,19 @@ def main(
             f"[red]✗[/red] Errors: {counter.error}  ======="
         )
 
+        # ← ДОБАВЛЕНО: вывод подробного списка ошибок
+        if error_list:
+            console.print("\n[red]❌ Detailed errors:[/red]")
+            for idx, err in enumerate(error_list, 1):
+                console.print(f"  {idx}. {err}")
+
         if counter.error == 0:
             break
 
         input("Error detected, press Enter to retry...")
         console.print("Retrying...")
         counter = Counter()
+        error_list = []  # очищаем ошибки для новой попытки
 
     # JSON 输出
     if json_output:
