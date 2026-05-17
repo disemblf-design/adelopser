@@ -1,0 +1,15 @@
+services:
+  - type: worker
+    name: apple-music-bot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: MEDIA_USER_TOKEN
+        sync: false
+      - key: AUTHORIZATION_TOKEN
+        sync: false
+      - key: STOREFRONT
+        value: us
