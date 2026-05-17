@@ -1,0 +1,49 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "apple-music-downloader"
+version = "1.0.0"
+description = "Apple Music ALAC / Dolby Atmos / AAC Downloader (Python rewrite)"
+authors = ["Apple Music Downloader Contributors"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "am_downloader" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+httpx = "^0.28.0"
+pyyaml = "^6.0"
+pydantic = "^2.10.0"
+click = "^8.1.0"
+rich = "^13.0.0"
+questionary = "^2.0.0"
+m3u8 = "^6.0.0"
+protobuf = "^5.29.0"
+cryptography = "^44.0.0"
+lxml = "^5.3.0"
+mutagen = "^1.47.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-httpx = "^0.35.0"
+pytest-mock = "^3.14.0"
+ruff = "^0.9.0"
+mypy = "^1.14.0"
+
+[tool.poetry.scripts]
+am-dl = "am_downloader.cli:main"
+alacfix = "cmd.alacfix:main"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
