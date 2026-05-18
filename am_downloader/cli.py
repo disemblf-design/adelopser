@@ -92,7 +92,7 @@ config: ConfigSet = ConfigSet()
 counter = Counter()
 ok_dict: dict[str, list[int]] = {}
 added_tracks: list[AddedTrack] = []
-error_list: list[str] = []  # ← ДОБАВЛЕНО: список ошибок
+error_list: list[str] = []  # список ошибок
 _forbidden_re = re.compile(r'[/\\<>:"|?*]')
 
 # CLI 运行时标志（由 main() 函数设置）
@@ -691,6 +691,14 @@ def main(
         console.print(f"[red]{e}[/red]")
         sys.exit(1)
 
+    # ✅ ПЕРЕОПРЕДЕЛЕНИЕ ТОКЕНОВ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ (RAILWAY)
+    if os.getenv("MEDIA_USER_TOKEN"):
+        config.media_user_token = os.getenv("MEDIA_USER_TOKEN")
+    if os.getenv("AUTHORIZATION_TOKEN"):
+        config.authorization_token = os.getenv("AUTHORIZATION_TOKEN")
+    if os.getenv("STOREFRONT"):
+        config.storefront = os.getenv("STOREFRONT")
+
     # 覆盖配置
     if alac_max is not None:
         config.alac_max = alac_max
@@ -839,7 +847,6 @@ def main(
             f"[red]✗[/red] Errors: {counter.error}  ======="
         )
 
-        # ← ДОБАВЛЕНО: вывод подробного списка ошибок
         if error_list:
             console.print("\n[red]❌ Detailed errors:[/red]")
             for idx, err in enumerate(error_list, 1):
@@ -851,7 +858,7 @@ def main(
         input("Error detected, press Enter to retry...")
         console.print("Retrying...")
         counter = Counter()
-        error_list = []  # очищаем ошибки для новой попытки
+        error_list = []
 
     # JSON 输出
     if json_output:
@@ -913,7 +920,7 @@ def _interactive_search(search_type: str, query: str, client: AppleMusicClient) 
             console.print(f"[red]Search failed: {e}[/red]")
             return
 
-        items: list[tuple[str, str, str, str]] = []  # (display, type, url, id)
+        items: list[tuple[str, str, str, str]] = []
 
         if search_type == "album" and resp.results.albums:
             for item in resp.results.albums.data:
@@ -968,7 +975,6 @@ def _interactive_search(search_type: str, query: str, client: AppleMusicClient) 
         selected = items[idx]
         console.print(f"Selected: {selected[2]}")
 
-        # 音质选择
         quality = questionary.select(
             "Select quality:",
             choices=["Lossless (ALAC)", "High-Quality (AAC)", "Dolby Atmos"],
@@ -977,10 +983,6 @@ def _interactive_search(search_type: str, query: str, client: AppleMusicClient) 
         if quality is None:
             return
 
-        # 设置标志并下载
-        # 这里简化：直接用 URL 下载
-        import sys
-        # 模拟 URL 下载流程
         _process_url(selected[2], client)
 
 
