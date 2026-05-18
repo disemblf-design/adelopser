@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -23,7 +23,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Устанавливаем сам пакет (совместим с Python 3.11+)
 RUN pip install -e .
 
 CMD ["python", "bot.py"]
