@@ -16,7 +16,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 Пришлите ссылку на артиста Apple Music, и я загружу всю дискографию.\n"
         "Пример: /download https://music.apple.com/artist/...\n"
-        "После завершения пришлю список ошибок (если будут)."
+        "После завершения пришлю лог работы."
     )
 
 async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -24,13 +24,7 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Укажите ссылку после /download")
         return
     url = context.args[0]
-    await update.message.reply_text(f"⏳ Начинаю загрузку: {url}\nСмотрю логи Railway...")
-
-    # Диагностика: какие переменные окружения с токенами видны
-    print("=== ENV KEYS (with TOKEN or STOREFRONT) ===")
-    for k in os.environ.keys():
-        if 'TOKEN' in k.upper() or 'STOREFRONT' in k.upper():
-            print(f"  {k} is set")
+    await update.message.reply_text(f"⏳ Начинаю загрузку: {url}\nЖдите, это может занять несколько минут...")
 
     try:
         result = subprocess.run(
@@ -38,19 +32,14 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
             capture_output=True,
             text=True,
             timeout=600,
-            env=os.environ.copy()   # передаём все переменные окружения
+            env=os.environ.copy()
         )
-        print("=== STDOUT ===")
-        print(result.stdout)
-        print("=== STDERR ===")
-        print(result.stderr)
-        print("=== RETURN CODE ===")
-        print(result.returncode)
-
-        if result.returncode == 0:
-            await update.message.reply_text("✅ Команда выполнена. Результат в логах Railway.")
-        else:
-            await update.message.reply_text(f"❌ Ошибка (код {result.returncode}). Детали в логах.")
+        # Собираем вывод
+        output = result.stdout + "\n" + result.stderr
+        # Если вывод очень длинный, обрежем (Telegram ограничение 4096 символов)
+        if len(output) > 4000:
+            output = output[:4000] + "\n... (обрезано)"
+        await update.message.reply_text(f"Код возврата: {result.returncode}\n\nВывод:\n{output}")
     except subprocess.TimeoutExpired:
         await update.message.reply_text("⚠️ Загрузка заняла слишком много времени, прервано.")
     except Exception as e:
