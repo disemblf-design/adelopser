@@ -1,10 +1,8 @@
 FROM ubuntu:22.04
 
-# Принудительно задаём DNS-серверы Google
+# Принудительно задаём DNS-серверы Google (решает проблему с DNS внутри контейнера)
 RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf
 RUN echo "nameserver 8.8.4.4" >> /etc/resolv.conf
-
-# ... остальной код Dockerfile (без изменений)
 
 ENV DEBIAN_FRONTEND=noninteractive
 
