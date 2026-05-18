@@ -1,7 +1,6 @@
 click
 rich
 mutagen
-httpx==0.25.2
 questionary
 pydantic
 python-dotenv
@@ -11,3 +10,4 @@ pyyaml
 protobuf
 cryptography
 lxml
+requests
