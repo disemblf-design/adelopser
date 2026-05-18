@@ -5,11 +5,11 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
     envVars:
-      - key: 8651850405:AAFXOWAK8xomXrnlELKzBS1KNXDbx1m2usI
+      - key: TELEGRAM_BOT_TOKEN
         sync: false
-      - key: 0.As6AIgDAPBdSGJT/6hwsdwsL3C8aBFlUtYnuvbpCB3Z6MQib685ESYbOXUoDuZrbUbI+d8rngtC/CbgUKYOaI/q15ffcD4EJEoXi5J+ezFoy84MPOgXI1Q/+3SACt12yWLwcHfux9GkW9GjGAUJyoYzwui0HQik8tgVzMOYEh1NWQzA2jV4SaXe4bxGc1Qkw2BDja53m4i4gZC4tDQS4TZOe5gmyMWMm/IciWwvof4tV+7P0Yw==
+      - key: MEDIA_USER_TOKEN
         sync: false
-      - key: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNzc3MjQwMjk4LCJleHAiOjE3ODQ0OTc4OTgsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.VYQzXEvKE1lE7AUim5cnBwge3aOWDOi1Y5E0gf6cUQeF3qLOS8clnzOkmiHySfr0wgGcDKM49l4YQe-K5GiuZg
+      - key: AUTHORIZATION_TOKEN
         sync: false
       - key: STOREFRONT
-        value: ca
+        value: us
