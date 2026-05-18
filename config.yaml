@@ -1,0 +1,36 @@
+# Apple Music Downloader Configuration
+media_user_token: ""   # будет взято из переменной окружения MEDIA_USER_TOKEN
+authorization_token: "" # будет взято из переменной окружения AUTHORIZATION_TOKEN
+storefront: us
+alac_save_folder: downloads/alac
+atmos_save_folder: downloads/atmos
+aac_save_folder: downloads/aac
+mv_save_folder: downloads/mv
+artist_folder_format: "{ArtistName}"
+album_folder_format: "{ArtistName}/{AlbumName} ({ReleaseYear}) {Quality}"
+playlist_folder_format: "{PlaylistName}"
+song_file_format: "{SongNumer} - {SongName}{Tag}"
+cover_format: jpg
+cover_size: 1000x1000
+embed_cover: true
+embed_lrc: true
+save_lrc_file: false
+lrc_type: synced
+language: en
+lrc_format: lrc
+alac_max: 192000
+atmos_max: 768000
+aac_type: aac-lc
+mv_audio_type: aac
+mv_max: 1080
+alac_fix: true
+convert_after_download: false
+convert_format: mp3
+convert_keep_original: false
+convert_skip_if_source_matches: true
+explicit_choice: " Explicit"
+clean_choice: " Clean"
+apple_master_choice: " Apple Digital Master"
+limit_max: 100
+get_m3u8_mode: hires
+get_m3u8_port: 127.0.0.1:20020
