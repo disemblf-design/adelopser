@@ -758,7 +758,13 @@ def main(
     for i, url in enumerate(urls_list):
         if "/artist/" in url:
             try:
-                artist_name, artist_id = get_artist_name(client, *check_url_artist(url), config.language)
+                storefront_from_url, artist_id_from_url = check_url_artist(url)
+                print(f"DIAG: check_url_artist returned storefront='{storefront_from_url}', artist_id='{artist_id_from_url}'", file=sys.stderr)
+                if not artist_id_from_url:
+                    console.print(f"[red]Could not extract artist ID from URL: {url}[/red]")
+                    return
+                artist_name, artist_id = get_artist_name(client, storefront_from_url, artist_id_from_url, config.language)
+                print(f"DIAG: artist_name='{artist_name}', artist_id='{artist_id}'", file=sys.stderr)
                 config.artist_folder_format = config.artist_folder_format.replace(
                     "{UrlArtistName}", limit_string(artist_name, config.limit_max)
                 ).replace("{ArtistId}", artist_id)
@@ -910,11 +916,19 @@ def _rip_single_song(song_id: str, client: AppleMusicClient, storefront: str) ->
 
 
 def _get_artist_items(client: AppleMusicClient, artist_url: str, rel_type: str) -> list[str]:
-    """获取艺术家的专辑/MV URL 列表"""
+    """获取艺术家的专辑/MV URL 列表 (404 не прерывает)"""
     storefront, artist_id = check_url_artist(artist_url)
-    print(f"DIAG: storefront from URL = {storefront}, artist_id={artist_id}", file=sys.stderr)
-    items = get_artist_relationships(client, storefront, artist_id, rel_type, config.language)
-    return [item.get("attributes", {}).get("url", "") for item in items if item.get("attributes", {}).get("url")]
+    print(f"DIAG: storefront from URL = {storefront}, artist_id={artist_id}, rel_type={rel_type}", file=sys.stderr)
+    try:
+        items = get_artist_relationships(client, storefront, artist_id, rel_type, config.language)
+        return [item.get("attributes", {}).get("url", "") for item in items if item.get("attributes", {}).get("url")]
+    except Exception as e:
+        # Если ошибка 404, просто возвращаем пустой список
+        if "404" in str(e):
+            print(f"DIAG: {rel_type} not found (404), skipping", file=sys.stderr)
+        else:
+            print(f"DIAG: Failed to get {rel_type}: {e}", file=sys.stderr)
+        return []
 
 
 def _interactive_search(search_type: str, query: str, client: AppleMusicClient) -> None:
