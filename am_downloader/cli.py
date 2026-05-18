@@ -691,13 +691,18 @@ def main(
         console.print(f"[red]{e}[/red]")
         sys.exit(1)
 
-    # ✅ ПЕРЕОПРЕДЕЛЕНИЕ ТОКЕНОВ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ (RAILWAY)
+    # ✅ Переопределение токенов из переменных окружения (RAILWAY)
     if os.getenv("MEDIA_USER_TOKEN"):
         config.media_user_token = os.getenv("MEDIA_USER_TOKEN")
     if os.getenv("AUTHORIZATION_TOKEN"):
         config.authorization_token = os.getenv("AUTHORIZATION_TOKEN")
     if os.getenv("STOREFRONT"):
         config.storefront = os.getenv("STOREFRONT")
+
+    # 📊 Диагностика (будет видна в логах Railway и в ответе бота)
+    print(f"DIAG: config.storefront = {config.storefront}", file=sys.stderr)
+    print(f"DIAG: media_user_token length = {len(config.media_user_token)}", file=sys.stderr)
+    print(f"DIAG: authorization_token length = {len(config.authorization_token)}", file=sys.stderr)
 
     # 覆盖配置
     if alac_max is not None:
@@ -711,9 +716,16 @@ def main(
     if mv_max is not None:
         config.mv_max = mv_max
 
-    # 获取 token
+    # Обработка authorization_token: добавляем "Bearer " если отсутствует
+    auth_token = config.authorization_token
+    if auth_token and not auth_token.startswith("Bearer "):
+        auth_token = f"Bearer {auth_token}"
+    else:
+        auth_token = auth_token or ""
+
+    # 获取 клиент
     client = AppleMusicClient(
-        config.authorization_token or config.authorization_token.replace("Bearer ", ""),
+        auth_token,
         config.language,
     )
     try:
@@ -900,6 +912,7 @@ def _rip_single_song(song_id: str, client: AppleMusicClient, storefront: str) ->
 def _get_artist_items(client: AppleMusicClient, artist_url: str, rel_type: str) -> list[str]:
     """获取艺术家的专辑/MV URL 列表"""
     storefront, artist_id = check_url_artist(artist_url)
+    print(f"DIAG: storefront from URL = {storefront}, artist_id={artist_id}", file=sys.stderr)
     items = get_artist_relationships(client, storefront, artist_id, rel_type, config.language)
     return [item.get("attributes", {}).get("url", "") for item in items if item.get("attributes", {}).get("url")]
 
