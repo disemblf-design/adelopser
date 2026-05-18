@@ -1,8 +1,13 @@
 click
 rich
 mutagen
-httpx
+httpx>=0.24.0,<0.28.0
 questionary
 pydantic
 python-dotenv
 python-telegram-bot==20.7
+m3u8
+pyyaml
+protobuf
+cryptography
+lxml
