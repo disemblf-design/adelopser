@@ -3,14 +3,13 @@ import subprocess
 import logging
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 logging.basicConfig(level=logging.INFO)
 
-# Путь к вашему основному скрипту (менять не нужно, он в репозитории)
 CLI_SCRIPT = "am_downloader/cli.py"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -25,47 +24,46 @@ async def download(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Укажите ссылку после /download")
         return
     url = context.args[0]
-    await update.message.reply_text(f"⏳ Начинаю загрузку: {url}\nЭто может занять несколько минут...")
+    await update.message.reply_text(f"⏳ Начинаю загрузку: {url}\nСмотрю логи Railway...")
+
+    # Диагностика: какие переменные окружения с токенами видны
+    print("=== ENV KEYS (with TOKEN or STOREFRONT) ===")
+    for k in os.environ.keys():
+        if 'TOKEN' in k.upper() or 'STOREFRONT' in k.upper():
+            print(f"  {k} is set")
 
     try:
-        # Запускаем ваш скрипт
         result = subprocess.run(
             ["python", CLI_SCRIPT, url],
             capture_output=True,
             text=True,
-            timeout=600  # 10 минут
+            timeout=600,
+            env=os.environ.copy()   # передаём все переменные окружения
         )
-        output = result.stdout + result.stderr
+        print("=== STDOUT ===")
+        print(result.stdout)
+        print("=== STDERR ===")
+        print(result.stderr)
+        print("=== RETURN CODE ===")
+        print(result.returncode)
 
-        # Ищем в выводе блок "❌ Detailed errors:"
-        if "❌ Detailed errors:" in output:
-            # Отправляем последние 10 строк с ошибками
-            lines = output.splitlines()
-            errors = []
-            capture = False
-            for line in lines:
-                if "❌ Detailed errors:" in line:
-                    capture = True
-                    continue
-                if capture and line.strip().startswith((" ", "1.", "2.")):
-                    errors.append(line.strip())
-                elif capture and not line.strip():
-                    break
-            if errors:
-                await update.message.reply_text("❌ Ошибки при загрузке:\n" + "\n".join(errors[:20]))
-            else:
-                await update.message.reply_text("✅ Загрузка завершена без ошибок.")
+        if result.returncode == 0:
+            await update.message.reply_text("✅ Команда выполнена. Результат в логах Railway.")
         else:
-            await update.message.reply_text("✅ Загрузка завершена. Проверьте логи.")
+            await update.message.reply_text(f"❌ Ошибка (код {result.returncode}). Детали в логах.")
     except subprocess.TimeoutExpired:
         await update.message.reply_text("⚠️ Загрузка заняла слишком много времени, прервано.")
     except Exception as e:
         await update.message.reply_text(f"🔥 Ошибка: {str(e)}")
 
 def main():
+    if not TOKEN:
+        print("FATAL: TELEGRAM_BOT_TOKEN is not set")
+        return
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("download", download))
+    print("Bot started polling...")
     app.run_polling()
 
 if __name__ == "__main__":
